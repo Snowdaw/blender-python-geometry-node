@@ -1,7 +1,7 @@
 # Blender Python Geometry Node
 This repository contains a Blender (4.1) fork that adds a Python node to the geometry nodes system.
 
-![Text_block](python_node_example_images\showcase-1.png)
+![Showcase-1](python_node_example_images/Showcase-1.png)
 
 # What does this do?
 The Python node allows users to process primitives and execute Python code from the geometry node system.
@@ -31,7 +31,7 @@ Example using a text block named "Text":
 ```
 import bpy; exec(bpy.data.texts['Text'].as_string())
 ```
-![Text_block](python_node_example_images\Text_block.png)
+![Text_block](python_node_example_images/Text_block.png)
 
 The inputs are stored in the following Python lists:
 - utils
