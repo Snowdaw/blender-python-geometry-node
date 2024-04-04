@@ -466,7 +466,7 @@ DefNode(GeometryNode, GEO_NODE_POINTS_TO_CURVES, 0, "POINTS_TO_CURVES", PointsTo
 DefNode(GeometryNode, GEO_NODE_INPUT_EDGE_SMOOTH, 0, "INPUT_EDGE_SMOOTH", InputEdgeSmooth, "Is Edge Smooth", "Retrieve whether each edge is marked for smooth or split normals")
 
 /*      Tree type      Node ID           RNA def function   Enum name   Struct name   UI Name           UI Description */
-DefNode(GeometryNode,  GEO_NODE_PYTHON,  0,                 "PYTHON",   Python,       "Python Script",  "Executes Python code")
+DefNode(GeometryNode,  GEO_NODE_PYTHON,  0,                 "PYTHON",   Python,       "Python",  "Executes Python code")
 
 /* undefine macros */
 #undef DefNode
