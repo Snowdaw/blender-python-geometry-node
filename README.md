@@ -72,6 +72,11 @@ in the file found here:
 4.1\scripts\startup\bl_ui\node_add_menu_geometry.py
 ```
 
+# Disclaimer
+Not affiliated with Blender or the Blender foundation.
+
+The stability of this code may vary. Please be mindful of that.
+
 License
 -------
 
