@@ -1276,7 +1276,7 @@ void PyC_RunQuicky(const char *filepath, int n, ...)
             item_new = Py_BuildValue("sO", format, item);
           }
 
-          ret = PyObject_Call(pack, item_new, nullptr);
+          ret = PyObject_CallFunctionObjArgs(pack, item_new, nullptr);
 
           if (ret) {
             /* copy the bytes back into memory */
@@ -1316,6 +1316,413 @@ void PyC_RunQuicky(const char *filepath, int n, ...)
     fprintf(stderr, "%s: '%s' missing\n", __func__, filepath);
   }
 }
+
+ 
+static void string_vector_into_PyList(std::vector<std::string> *vector_p, Py_ssize_t  *sizes, PyObject * py_list, PyObject * calcsize, PyObject * unpack) {
+
+  for (int i = 0; i < (*vector_p).size(); i++) {
+    std::string format = std::to_string((*vector_p)[i].size()).append("s").c_str();
+    void *ptr = (void *)(*vector_p)[i].data(); 
+
+    PyObject *ret = PyObject_CallFunction(calcsize, "s", format.c_str());
+
+    if (ret) {  
+      sizes[i] = PyLong_AsLong(ret);
+      Py_DECREF(ret);
+      ret = PyObject_CallFunction(unpack, "sy#", format.c_str(), (char *)ptr ,sizes[i]);
+    }
+
+    if (ret == nullptr) {
+      printf("%s error, line:%d\n", __func__, __LINE__);
+      PyErr_Print();
+      PyErr_Clear();
+
+      PyList_SET_ITEM(py_list, i, Py_INCREF_RET(Py_None)); /* hold user */
+
+      sizes[i] = 0;
+    }
+    else {
+      if (PyTuple_GET_SIZE(ret) == 1) {
+        /* convenience, convert single tuples into single values */
+        PyObject *tmp = PyTuple_GET_ITEM(ret, 0);
+        Py_INCREF(tmp);
+        Py_DECREF(ret);
+        ret = tmp;
+      }
+
+      PyList_SET_ITEM(py_list, i, ret); /* hold user */
+    }
+  }
+}
+
+static void PyList_strings_into_vector(const char * node_name, const char * list_name, std::vector<std::string> *vector_p, Py_ssize_t * sizes, PyObject * py_result, PyObject * values, PyObject * py_dict, PyObject * pack) { 
+    values = PyDict_GetItemString(py_dict, list_name);
+
+    if (values && PyList_Check(values)) {
+
+      /* don't use the result */
+      Py_DECREF(py_result);
+      py_result = nullptr;
+      /* now get the values back */
+      for (int i = 0; i < (*vector_p).size(); i++) {
+        std::string format = std::to_string((*vector_p)[i].size()).append("s").c_str();  
+        void *ptr = (*vector_p)[i].data();
+
+        PyObject *item;
+        PyObject *item_new;
+        /* prepend the string formatting and remake the tuple */
+        item = PyList_GET_ITEM(values, i);
+        if (PyTuple_CheckExact(item)) {
+          int ofs = PyTuple_GET_SIZE(item);
+          item_new = PyTuple_New(ofs + 1);
+          while (ofs--) {
+            PyObject *member = PyTuple_GET_ITEM(item, ofs);
+            PyTuple_SET_ITEM(item_new, ofs + 1, member);
+            Py_INCREF(member);
+          }
+
+          PyTuple_SET_ITEM(item_new, 0, PyUnicode_FromString(format.c_str()));
+        }
+        else {
+          item_new = Py_BuildValue("sO", format.c_str(), item);
+        }
+
+        PyObject * ret = PyObject_Call(pack, item_new, nullptr);
+
+
+        if (ret) {
+          /* copy the bytes back into memory */
+          memcpy(ptr, PyBytes_AS_STRING(ret), sizes[i]);
+          Py_DECREF(ret);
+        }
+        else {
+          printf("%s node: error on arg '%d' of '%s'\n", node_name, i, list_name);
+          //PyC_ObSpit("failed converting:", item_new);
+          PyErr_Print();
+          PyErr_Clear();
+        }
+
+        Py_DECREF(item_new);
+      }
+    }
+    else {
+      printf("Python node error, '%s' not a list\n", list_name);
+    }
+}
+
+static void PyList_ints_into_vector(const char * node_name, const char * list_name, const char * format_char, std::vector<int> *vector_p, Py_ssize_t * sizes, PyObject * py_result, PyObject * values, PyObject * py_dict, PyObject * pack) {    
+  values = PyDict_GetItemString(py_dict, list_name);
+
+  if (values && PyList_Check(values)) {
+
+    /* don't use the result */
+    Py_DECREF(py_result);
+    py_result = nullptr;
+    /* now get the values back */
+    for (int i = 0; i < (*vector_p).size(); i++) {
+      std::string format = std::string(format_char);
+      void *ptr = &(*vector_p)[i];
+
+      PyObject *item;
+      PyObject *item_new;
+      /* prepend the string formatting and remake the tuple */
+      item = PyList_GET_ITEM(values, i);
+      if (PyTuple_CheckExact(item)) {
+        int ofs = PyTuple_GET_SIZE(item);
+        item_new = PyTuple_New(ofs + 1);
+        while (ofs--) {
+          PyObject *member = PyTuple_GET_ITEM(item, ofs);
+          PyTuple_SET_ITEM(item_new, ofs + 1, member);
+          Py_INCREF(member);
+        }
+
+        PyTuple_SET_ITEM(item_new, 0, PyUnicode_FromString(format.c_str()));
+      }
+      else {
+        item_new = Py_BuildValue("sO", format.c_str(), item);
+      }
+
+      PyObject * ret = PyObject_Call(pack, item_new, nullptr);
+
+      if (ret) {
+        /* copy the bytes back into memory */
+        memcpy(ptr, PyBytes_AS_STRING(ret), sizes[i]);
+        Py_DECREF(ret);
+      }
+      else {
+        printf("%s node: error on arg '%d' of '%s'\n", node_name, i, list_name);
+        //PyC_ObSpit("failed converting:", item_new);
+        PyErr_Print();
+        PyErr_Clear();
+      }
+
+      Py_DECREF(item_new);
+    }
+  }
+  else {
+    printf("Python node error, '%s' not a list\n", list_name);
+  }
+}
+
+static void PyList_floats_into_vector(const char * node_name, const char * list_name, const char * format_char, std::vector<float> *vector_p, Py_ssize_t * sizes, PyObject * py_result, PyObject * values, PyObject * py_dict, PyObject * pack) {    
+  values = PyDict_GetItemString(py_dict, list_name);
+
+  if (values && PyList_Check(values)) {
+    /* don't use the result */
+    Py_DECREF(py_result);
+    py_result = nullptr;
+    /* now get the values back */
+    for (int i = 0; i < (*vector_p).size(); i++) {
+      std::string format = std::string(format_char);
+      void *ptr = &(*vector_p)[i];
+
+      PyObject *item;
+      PyObject *item_new;
+
+      /* prepend the string formatting and remake the tuple */
+      item = PyList_GET_ITEM(values, i);
+      if (PyTuple_CheckExact(item)) {
+        int ofs = PyTuple_GET_SIZE(item);
+        item_new = PyTuple_New(ofs + 1);
+        while (ofs--) {
+          PyObject *member = PyTuple_GET_ITEM(item, ofs);
+          PyTuple_SET_ITEM(item_new, ofs + 1, member);
+          Py_INCREF(member);
+        }
+
+        PyTuple_SET_ITEM(item_new, 0, PyUnicode_FromString(format.c_str()));
+      }
+      else {
+        item_new = Py_BuildValue("sO", format.c_str(), item);
+      }
+    
+      PyObject * ret = PyObject_Call(pack, item_new, nullptr);
+
+      if (ret) {
+        /* copy the bytes back into memory */
+        memcpy(ptr, PyBytes_AS_STRING(ret), sizes[i]);
+        Py_DECREF(ret);
+      }
+      else {
+        printf("%s node: error on arg '%d' of '%s'\n", node_name, i, list_name);
+        //PyC_ObSpit("failed converting:", item_new);
+        PyErr_Print();
+        PyErr_Clear();
+      }
+
+      Py_DECREF(item_new);
+    }
+  }
+  else {
+    printf("Python node error, '%s' not a list\n", list_name);
+  }
+}
+
+
+static bool ends_with(std::string_view str, std::string_view suffix)
+ {
+    return   str.size() >= suffix.size() && str.compare(str.size()-suffix.size(), suffix.size(), suffix) == 0;
+}
+
+void PyC_RunString(const char *python_string, std::vector<std::string> * vector_utils_p, std::vector<std::string> * vector_input_strings_p, std::vector<int> * vector_input_ints_p, std::vector<float> * vector_input_floats_p, std::vector<int> * vector_input_bools_p)
+{
+  /* NOTE: Would be nice if python had this built in
+   * See: https://developer.blender.org/docs/handbook/tooling/pyfromc/ */
+
+  const PyGILState_STATE gilstate = PyGILState_Ensure();
+  
+  // Get node name from utils string vector
+  const char * node_name = (*vector_utils_p)[0].c_str();
+  PyObject *py_dict = PyC_DefaultNameSpace(node_name);
+
+  const int pylist_utils_size = vector_utils_p->size();
+  Py_ssize_t *list_util_sizes = static_cast<Py_ssize_t *>(PyMem_MALLOC(sizeof(*list_util_sizes) * (pylist_utils_size)));
+  PyObject *pylist_utils = PyList_New(pylist_utils_size);
+
+  const int pylist_strings_size = vector_input_strings_p->size();
+  Py_ssize_t *list_string_sizes = static_cast<Py_ssize_t *>(PyMem_MALLOC(sizeof(*list_string_sizes) * (pylist_strings_size)));
+  PyObject *pylist_strings = PyList_New(pylist_strings_size);
+
+  const int pylist_ints_size = vector_input_ints_p->size();
+  Py_ssize_t *list_int_sizes = static_cast<Py_ssize_t *>(PyMem_MALLOC(sizeof(list_int_sizes) * (pylist_ints_size)));
+  PyObject *pylist_ints = PyList_New(pylist_ints_size);
+
+  const int pylist_floats_size = vector_input_floats_p->size();
+  Py_ssize_t *list_float_sizes = static_cast<Py_ssize_t *>(PyMem_MALLOC(sizeof(list_float_sizes) * (pylist_floats_size)));
+  PyObject *pylist_floats = PyList_New(pylist_floats_size);
+
+  const int pylist_bools_size = vector_input_bools_p->size();
+  Py_ssize_t *list_bool_sizes = static_cast<Py_ssize_t *>(PyMem_MALLOC(sizeof(list_bool_sizes) * (pylist_bools_size)));
+  PyObject *pylist_bools = PyList_New(pylist_bools_size);
+
+  PyObject *py_result;
+
+  PyObject *struct_mod = PyImport_ImportModule("struct");
+  PyObject *calcsize = PyObject_GetAttrString(struct_mod, "calcsize"); /* struct.calcsize */
+  PyObject *pack = PyObject_GetAttrString(struct_mod, "pack");         /* struct.pack */
+  PyObject *unpack = PyObject_GetAttrString(struct_mod, "unpack");     /* struct.unpack */
+  
+
+  Py_DECREF(struct_mod);
+
+
+  // PUT UTILS INTO PY LIST
+  string_vector_into_PyList(&(* vector_utils_p), list_util_sizes, pylist_utils, calcsize, unpack);
+  
+  // PUT STRINGS INTO PY LIST
+  string_vector_into_PyList(&(* vector_input_strings_p), list_string_sizes, pylist_strings, calcsize, unpack);
+
+  // PUT INTS INTO PY LIST
+  for (int i = 0; i < pylist_ints_size; i++) {
+    void *ptr = &(*vector_input_ints_p)[i];
+    
+    PyObject *ret = PyObject_CallFunction(calcsize, "s", "i");
+
+    if (ret) {  
+      list_int_sizes[i] = PyLong_AsLong(ret); 
+      Py_DECREF(ret);
+      ret = PyObject_CallFunction(unpack, "sy#", "i", (char *)ptr , list_int_sizes[i]);
+    }
+
+    if (ret == nullptr) {
+      printf("%s error, line:%d\n", __func__, __LINE__);
+      PyErr_Print();
+      PyErr_Clear();
+
+      PyList_SET_ITEM(pylist_ints, i, Py_INCREF_RET(Py_None)); /* hold user */
+    }
+    else {
+      if (PyTuple_GET_SIZE(ret) == 1) {
+        /* convenience, convert single tuples into single values */
+        PyObject *tmp = PyTuple_GET_ITEM(ret, 0);
+        Py_INCREF(tmp);
+        Py_DECREF(ret);
+        ret = tmp;
+      }
+
+      PyList_SET_ITEM(pylist_ints, i, ret); /* hold user */
+    }
+  }
+
+  // PUT FLOATS INTO PY LIST
+  for (int i = 0; i < pylist_floats_size; i++) {
+    void *ptr = &(*vector_input_floats_p)[i];
+    
+    PyObject *ret = PyObject_CallFunction(calcsize, "s", "f");
+
+    if (ret) {  
+      list_float_sizes[i] = PyLong_AsLong(ret); 
+      Py_DECREF(ret);
+      ret = PyObject_CallFunction(unpack, "sy#", "f", (char *)ptr , list_float_sizes[i]);
+    }
+
+    if (ret == nullptr) {
+      printf("%s error, line:%d\n", __func__, __LINE__);
+      PyErr_Print();
+      PyErr_Clear();
+
+      PyList_SET_ITEM(pylist_floats, i, Py_INCREF_RET(Py_None)); /* hold user */
+    }
+    else {
+      if (PyTuple_GET_SIZE(ret) == 1) {
+        /* convenience, convert single tuples into single values */
+        PyObject *tmp = PyTuple_GET_ITEM(ret, 0);
+        Py_INCREF(tmp);
+        Py_DECREF(ret);
+        ret = tmp;
+      }
+
+      PyList_SET_ITEM(pylist_floats, i, ret); /* hold user */
+    }
+  }
+
+// PUT BOOLS INTO PY LIST
+  for (int i = 0; i < pylist_bools_size; i++) {
+    void *ptr = &(*vector_input_bools_p)[i];
+
+    PyObject *ret = PyObject_CallFunction(calcsize, "s", "?");
+
+    if (ret) {  
+      list_bool_sizes[i] = PyLong_AsLong(ret); 
+      Py_DECREF(ret);
+      ret = PyObject_CallFunction(unpack, "sy#", "?", (char *)ptr , list_bool_sizes[i]);
+    }
+
+    if (ret == nullptr) {
+      printf("%s error, line:%d\n", __func__, __LINE__);
+      PyErr_Print();
+      PyErr_Clear();
+
+      PyList_SET_ITEM(pylist_bools, i, Py_INCREF_RET(Py_None)); /* hold user */
+    }
+    else {
+      if (PyTuple_GET_SIZE(ret) == 1) {
+        /* convenience, convert single tuples into single values */
+        PyObject *tmp = PyTuple_GET_ITEM(ret, 0);
+        Py_INCREF(tmp);
+        Py_DECREF(ret);
+        ret = tmp;
+      }
+
+      PyList_SET_ITEM(pylist_bools, i, ret); /* hold user */
+    }
+  }
+
+  /* set the value so we can access it */
+  PyDict_SetItemString(py_dict, "utils", pylist_utils);
+  PyDict_SetItemString(py_dict, "strings", pylist_strings);
+  PyDict_SetItemString(py_dict, "integers", pylist_ints);
+  PyDict_SetItemString(py_dict, "floats", pylist_floats);
+  PyDict_SetItemString(py_dict, "bools", pylist_bools);
+
+  Py_DECREF(pylist_utils);
+  Py_DECREF(pylist_strings);
+  Py_DECREF(pylist_ints);
+  Py_DECREF(pylist_floats);
+  Py_DECREF(pylist_bools);
+
+
+
+  // RUN
+  // The executing of Python code can decrease the refcount, sometimes making it 0 and leading to crashes futher on.
+  // To prevent this we check if PyRun_String has decreased the refcount and if so increasing it again.
+  // Before that we make sure that the refcount does not hit 0 and (randomly?) gets freed by increasing it before the call.
+  Py_INCREF(py_dict);
+  py_result = PyRun_String(python_string, Py_file_input, py_dict, py_dict);
+  if (py_dict->ob_refcnt - 1 != 0) {
+    Py_DECREF(py_dict);
+  }
+  
+
+
+  // GET OUT OF PY LIST
+  if (py_result) {
+    PyList_strings_into_vector(node_name,"strings", &(* vector_input_strings_p), list_string_sizes, py_result, pylist_strings, py_dict, pack);
+    PyList_ints_into_vector(node_name, "integers", "i", &(* vector_input_ints_p), list_int_sizes, py_result, pylist_ints, py_dict, pack);
+    PyList_floats_into_vector(node_name, "floats", "f", &(* vector_input_floats_p), list_float_sizes, py_result, pylist_floats, py_dict, pack);
+    PyList_ints_into_vector(node_name, "bools", "?", &(* vector_input_bools_p), list_bool_sizes, py_result, pylist_bools, py_dict, pack);
+  }
+  else {
+    //printf("%s error line:%d\n", __func__, __LINE__);
+    PyErr_Print();
+    PyErr_Clear();
+  }
+  
+  // py_dict does not get decremented because it causes crashes when using Python nodes at the same time
+  // Test case: Get object location to python node and use the geometry node tree modifier on multiple objects
+
+  Py_DECREF(calcsize);
+  Py_DECREF(pack);
+  Py_DECREF(unpack);
+  PyMem_FREE(list_util_sizes);
+  PyMem_FREE(list_string_sizes);
+  PyMem_FREE(list_int_sizes);
+  PyMem_FREE(list_float_sizes);
+  PyMem_FREE(list_bool_sizes); 
+
+  PyGILState_Release(gilstate);
+}
+
 
 void *PyC_RNA_AsPointer(PyObject *value, const char *type_name)
 {

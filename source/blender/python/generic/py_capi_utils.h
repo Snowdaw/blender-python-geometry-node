@@ -10,6 +10,9 @@
 #ifndef __PY_CAPI_UTILS_H__
 #define __PY_CAPI_UTILS_H__
 
+#include <iostream>
+#include <vector>
+
 #include "BLI_compiler_attrs.h"
 #include "BLI_sys_types.h"
 #include "BLI_utildefines_variadic.h"
@@ -174,6 +177,7 @@ int PyC_ParseUnicodeAsBytesAndSize_OrNone(PyObject *o, void *p);
  */
 PyObject *PyC_DefaultNameSpace(const char *filename);
 void PyC_RunQuicky(const char *filepath, int n, ...);
+void PyC_RunString(const char *python_string, std::vector<std::string> * multi_utils_vector, std::vector<std::string> * vector_input_strings_p, std::vector<int> * vector_input_ints_p, std::vector<float> * vector_input_floats_p, std::vector<int> * vector_input_bools_p);
 /**
  * Import `imports` into `py_dict`.
  *

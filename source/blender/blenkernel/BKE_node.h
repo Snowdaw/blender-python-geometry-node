@@ -1332,6 +1332,8 @@ void BKE_nodetree_remove_layer_n(struct bNodeTree *ntree, struct Scene *scene, i
 #define GEO_NODE_SORT_ELEMENTS 2123
 #define GEO_NODE_MENU_SWITCH 2124
 
+#define GEO_NODE_PYTHON 1337
+
 /** \} */
 
 /* -------------------------------------------------------------------- */

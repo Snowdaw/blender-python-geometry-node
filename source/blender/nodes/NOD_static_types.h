@@ -465,6 +465,9 @@ DefNode(GeometryNode, GEO_NODE_INTERPOLATE_CURVES, 0, "INTERPOLATE_CURVES", Inte
 DefNode(GeometryNode, GEO_NODE_POINTS_TO_CURVES, 0, "POINTS_TO_CURVES", PointsToCurves, "Points to Curves", "Split all points to curve by its group ID and reorder by weight")
 DefNode(GeometryNode, GEO_NODE_INPUT_EDGE_SMOOTH, 0, "INPUT_EDGE_SMOOTH", InputEdgeSmooth, "Is Edge Smooth", "Retrieve whether each edge is marked for smooth or split normals")
 
+/*      Tree type      Node ID           RNA def function   Enum name   Struct name   UI Name           UI Description */
+DefNode(GeometryNode,  GEO_NODE_PYTHON,  0,                 "PYTHON",   Python,       "Python Script",  "Executes Python code")
+
 /* undefine macros */
 #undef DefNode
 

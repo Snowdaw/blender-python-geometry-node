@@ -199,6 +199,8 @@ set(SRC
   nodes/node_geo_volume_cube.cc
   nodes/node_geo_volume_to_mesh.cc
 
+  nodes/node_geo_python.cc
+
   node_geometry_tree.cc
   node_geometry_util.cc
 
