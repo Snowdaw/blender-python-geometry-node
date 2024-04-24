@@ -21,6 +21,11 @@ MacOS does not have this button and will need Blender to be started from the Ter
 /Applications/Blender.app/Contents/MacOS/Blender
 ```
 
+If MacOS says the app is damaged run the following command
+```
+xattr -d com.apple.quarantine /Applications/Blender.app
+```
+
 # How do you get the node?
 The node is avaiable under `Utilities->Python`
 
