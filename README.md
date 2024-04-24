@@ -65,7 +65,22 @@ For example do not use `exit()` or an infinite loop. As this locks up the Blende
 Basically the same things as coding addons apply, with some geometry node based spice.
 
 # Build notes
-If you built this repository yourself don't forget to add 
+This build has edited numpy includes. Copy the following folder:
+https://github.com/numpy/numpy/tree/main/numpy/_core/include/numpy
+
+To the location with you platform. (Such as windows_x64)
+```
+lib/{your platform}/python/
+```
+Comment out:
+```
+#include <Python.h>
+```
+in `ndarrayobject.h` and `npy_common.h`
+
+## Post build
+
+After you have built this repository add:
 ```
 node_add_menu.add_node_type(layout, "GeometryNodePython")
 ```
