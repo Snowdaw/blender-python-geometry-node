@@ -16,6 +16,10 @@ This is located at `Window->Toggle System Console`
 
 ![Toggle_system_console.png](python_node_example_images/Toggle_system_console.png)
 
+MacOS does not have this button and will need Blender to be started from the Terminal. Example start command:
+```
+/Applications/Blender.app/Contents/MacOS/Blender
+```
 
 # How do you get the node?
 The node is avaiable under `Utilities->Python`
