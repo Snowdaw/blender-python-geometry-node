@@ -41,6 +41,7 @@
 #include "BLI_assert.h"
 #include "BLI_listbase.h"
 #include "BLI_map.hh"
+#include "BLI_math_matrix.h"
 #include "BLI_math_vector.h"
 #include "BLI_set.hh"
 #include "BLI_string.h"
@@ -249,6 +250,23 @@ static void version_bonegroups_to_bonecollections(Main *bmain)
      * groups will not be updated any more, but this way the data at least survives an accidental
      * save with Blender 4.0. */
   }
+}
+
+/**
+ * Change animation/drivers from "collections[..." to "collections_all[..." so
+ * they remain stable when the bone collection hierarchy structure changes.
+ */
+static void version_bonecollection_anim(FCurve *fcurve)
+{
+  const blender::StringRef rna_path(fcurve->rna_path);
+  constexpr char const *rna_path_prefix = "collections[";
+  if (!rna_path.startswith(rna_path_prefix)) {
+    return;
+  }
+
+  const std::string path_remainder(rna_path.drop_known_prefix(rna_path_prefix));
+  MEM_freeN(fcurve->rna_path);
+  fcurve->rna_path = BLI_sprintfN("collections_all[%s", path_remainder.c_str());
 }
 
 static void version_principled_bsdf_update_animdata(ID *owner_id, bNodeTree *ntree)
@@ -499,6 +517,27 @@ void do_versions_after_linking_400(FileData *fd, Main *bmain)
 
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 401, 23)) {
     version_nla_tweakmode_incomplete(bmain);
+  }
+
+  if (!MAIN_VERSION_FILE_ATLEAST(bmain, 401, 24)) {
+    /* Change drivers and animation on "armature.collections" to
+     * ".collections_all", so that they are drawn correctly in the tree view,
+     * and keep working when the collection is moved around in the hierarchy. */
+    LISTBASE_FOREACH (bArmature *, arm, &bmain->armatures) {
+      AnimData *adt = BKE_animdata_from_id(&arm->id);
+      if (!adt) {
+        continue;
+      }
+
+      LISTBASE_FOREACH (FCurve *, fcurve, &adt->drivers) {
+        version_bonecollection_anim(fcurve);
+      }
+      if (adt->action) {
+        LISTBASE_FOREACH (FCurve *, fcurve, &adt->action->curves) {
+          version_bonecollection_anim(fcurve);
+        }
+      }
+    }
   }
 
   /**
@@ -2954,6 +2993,16 @@ void blo_do_versions_400(FileData *fd, Library * /*lib*/, Main *bmain)
       if (brush->gpencil_settings && (brush->gpencil_settings->sculpt_flag & BRUSH_DIR_IN) != 0) {
         brush->flag |= BRUSH_DIR_IN;
       }
+    }
+  }
+
+  if (MAIN_VERSION_FILE_ATLEAST(bmain, 402, 0)) {
+    /* These matrices are runtime data and in 4.2 they are not contained in DNA. For those files
+     * from future versions, initialize the matrices to the identity so they are valid before a
+     * depsgraph update. */
+    LISTBASE_FOREACH (Object *, object, &bmain->objects) {
+      unit_m4(object->object_to_world);
+      unit_m4(object->world_to_object);
     }
   }
 
