@@ -16,6 +16,7 @@ This is located at `Window->Toggle System Console`
 
 ![Toggle_system_console.png](python_node_example_images/Toggle_system_console.png)
 
+
 # How do you get the node?
 The node is avaiable under `Utilities->Python`
 
@@ -60,23 +61,25 @@ Print statements can be quite slow. So avoid them if you are done debugging and 
 # How safe is this?
 If you are not careful you can absolutely crash or lock up Blender by using the Python node improperly (or I have bugs in the code). 
 
-For example do not use `exit()` or an infinite loop. As this locks up the Blender UI because the Python context is the same. Safe often and any mistakes won't have a big impact. I bad cases you can even use Blenders restore feature.
+For example do not use `exit()` or an infinite loop. As this locks up the Blender UI because the Python context is the same. Safe often and any mistakes won't have a big impact. In bad cases you can even use Blenders restore feature.
 
 Basically the same things as coding addons apply, with some geometry node based spice.
 
 # Build notes
 This build has edited numpy includes. Copy the following folder:
-https://github.com/numpy/numpy/tree/main/numpy/_core/include/numpy
+```
+lib/{your_platform}/python/311/lib/site-packages/numpy
+```
 
-To the location with you platform. (Such as windows_x64)
+To the location with your platform. (Such as windows_x64)
 ```
-lib/{your platform}/python/
+lib/{your_platform}/python/
 ```
-Comment out:
+In the copied numpy comment out:
 ```
 #include <Python.h>
 ```
-in `ndarrayobject.h` and `npy_common.h`
+in `core/include/numpy/ndarrayobject.h` and `core/include/numpy/npy_common.h`
 
 ## Post build
 

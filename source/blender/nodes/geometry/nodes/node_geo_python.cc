@@ -11,7 +11,7 @@
 #include "python/311/include/Python.h"
 #include "python/311/include/frameobject.h"
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include "python/numpy/arrayobject.h"
+#include "python/numpy/core/include/numpy/arrayobject.h"
 
 #include "BLI_utildefines.h" /* for bool */
 
