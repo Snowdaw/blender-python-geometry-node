@@ -35,12 +35,21 @@ The node can have many inputs but only outputs 4 of each input type.
 
 For geometry attributes all attributes can be read and written to, with the exception of internal attributes such as `.edge_verts` which can only be read. Currently instance attributes cannot be read or written to.
 
-The Python input is the Python string input that will get executed. It is recommended to point it to a text data block for easier use.
-Example using a text block named "Text":
+The Python input is the Python string input that will get executed. It is recommended to us the following default string which will execute the text block corresponding to the first input string. It also has an execution safeguard that prevents execution until the `bpy.enable_py_node` variable is set to True. It is strongly advised to use this to prevent things like an accidental `exit()` call locking you out of the blend file.
+
+Default string to use in the Python field one every node:
 ```
-import bpy; exec(bpy.data.texts['Text'].as_string())
+import bpy; exec(bpy.data.texts[node["strings"][0].decode()].as_string()) if hasattr(bpy, "enable_py_node") else print("Safeguard: Set bpy.enable_py_node to True to enable Python node execution")
 ```
-![Text_block](python_node_example_images/Text_block.png)
+
+To enable execution I put the following string in a geometry node tool:
+```
+import bpy; bpy.enable_py_node = True; print("Safeguard: Enabled Python execution! Happy noding!")
+```
+Then you can simply execute the tool and you will enable the Python node exution for nodes using the default string.
+
+In the image below we can see the Tool to enable Python nodes in the upper geometry node editor. When enabled the geometry node modifier in the lower editor can have its Python node execute the text block named `Test`.
+![Text_block](python_node_example_images/Defaults.png)
 
 Inputs can be accessed as follows:
 
