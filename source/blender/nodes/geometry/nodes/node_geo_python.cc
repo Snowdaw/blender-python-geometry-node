@@ -15,7 +15,8 @@
 
 #include "BLI_utildefines.h" /* for bool */
 
-#include "../../source/blender/python/generic/python_utildefines.h"
+#include "../../source/blender/python/generic/python_utildefines.hh"
+#include "../../source/blender/python/generic/py_capi_utils.hh"
 
 #ifndef MATH_STANDALONE
 #  include "MEM_guardedalloc.h"
@@ -57,8 +58,6 @@
 
 namespace blender::nodes::node_geo_python_cc {
 
-extern "C" PyObject *PyC_DefaultNameSpace(const char *filename);
-extern "C" void PyC_ObSpit(const char *name, PyObject *var);
 
 bool is_internal_attribute(std::string name) {
   if (name == ".edge_verts"  || name == ".corner_vert" ||
@@ -166,12 +165,12 @@ void PyC_RunString(const char *python_string, const int string_buf_size,
         } 
         case (9): {
           npy_intp attr_dims[1] = {attribute_sizes[i]};
-          py_value = PyArray_SimpleNewFromData(1, attr_dims, NPY_INT8, attribute_pointers[i]);
+          py_value = PyArray_SimpleNewFromData(1, attr_dims, NPY_BYTE, attribute_pointers[i]);
           break;
         } 
         case (10): { 
           npy_intp attr_dims[1] = {attribute_sizes[i]};
-          py_value = PyArray_SimpleNewFromData(1, attr_dims, NPY_INT8, attribute_pointers[i]);
+          py_value = PyArray_SimpleNewFromData(1, attr_dims, NPY_BYTE, attribute_pointers[i]);
           break;
         } 
         // Strings per vertex and such read random memeory and cause crashes. Maybe re-enable once Blender devs fix it.
@@ -351,8 +350,8 @@ static void node_geo_exec(GeoNodeExecParams params)
     if (!attributes) { continue; }
 
     if (attributes) {
-        Set<AttributeIDRef> attribute_ids =  (*attributes).all_ids();
-        for (AttributeIDRef attribute_id : attribute_ids) {
+        Set<StringRefNull> attribute_ids =  (*attributes).all_ids();
+        for (StringRefNull attribute_id : attribute_ids) {
           GAttributeReader attribute_id_read = attributes->lookup(attribute_id);
           const CPPType &type = attribute_id_read.varray.type();
           
@@ -505,7 +504,7 @@ static void node_geo_exec(GeoNodeExecParams params)
           */
           else { printf("Error: Unknown type found in geometry attributes!\n Fix this!"); continue; }
           
-          attribute_names.push_back(attribute_id.name());
+          attribute_names.push_back(attribute_id);
           attribute_domains.push_back(attribute_id_read.domain);
         }
         geoset_pointer_vecs.push_back(attribute_pointers_vector);
@@ -567,9 +566,9 @@ static void node_geo_exec(GeoNodeExecParams params)
     
     if (!attributes) { continue; }
     
-    Set<AttributeIDRef> attribute_ids = attributes->all_ids();
+    Set<StringRefNull> attribute_ids = attributes->all_ids();
     int attr_index = -1;
-    for (AttributeIDRef attribute_id : attribute_ids) {
+    for (StringRefNull attribute_id : attribute_ids) {
       attr_index += 1;
       if (is_internal_attribute(modified_geo_attribute_names[attr_index])) { continue; }
       
@@ -753,11 +752,12 @@ for (int index = 0; index < geoset_pointer_vecs.size(); index++) {
 
 static void node_register()
 {
-  static bNodeType ntype;
+  static blender::bke::bNodeType ntype;
   geo_node_type_base(&ntype, GEO_NODE_PYTHON, "Python", NODE_CLASS_GEOMETRY);
   ntype.declare = node_declare;
   ntype.geometry_node_execute = node_geo_exec;
-  nodeRegisterType(&ntype);
+  blender::bke::node_register_type(&ntype);
+
 }
 NOD_REGISTER_NODE(node_register)
 
