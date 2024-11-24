@@ -230,6 +230,8 @@ set(SRC
   nodes/node_geo_volume_to_mesh.cc
   nodes/node_geo_warning.cc
 
+  nodes/node_geo_python.cc
+
   include/NOD_geo_bake.hh
   include/NOD_geo_capture_attribute.hh
   include/NOD_geo_foreach_geometry_element.hh

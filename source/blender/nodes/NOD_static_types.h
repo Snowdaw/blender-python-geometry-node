@@ -509,6 +509,8 @@ DefNode(GeometryNode, GEO_NODE_VOLUME_CUBE, 0, "VOLUME_CUBE", VolumeCube, "Volum
 DefNode(GeometryNode, GEO_NODE_VOLUME_TO_MESH, 0, "VOLUME_TO_MESH", VolumeToMesh, "Volume to Mesh", "Generate a mesh on the \"surface\" of a volume")
 DefNode(GeometryNode, GEO_NODE_WARNING, 0, "WARNING", Warning, "Warning", "Create custom warnings in node groups")
 
+DefNode(GeometryNode, GEO_NODE_PYTHON, 0, "PYTHON", Python, "Python", "Executes Python code")
+
 /* undefine macros */
 #undef DefNode
 
