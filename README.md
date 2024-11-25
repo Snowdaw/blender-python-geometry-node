@@ -1,12 +1,12 @@
 # Blender Python Geometry Node
-This repository contains a Blender (4.3) fork that adds an experimental Python node to the geometry nodes system.
+This repository contains a Blender (4.3) fork that adds an experimental Python node to the geometry nodes system. This is a proof of concept and may be unstable.
 
 ![Showcase-2](python_node_example_images/Showcase-2.png)
 
 # What does this do?
-The Python node allows users to process geometry attributes and primitivesm, but **not** fields, using Python from within the geometry node system.
-Because it is executed in the context of the active Blender program, importing the `bpy` module works, but is limited because the Python code is executed during the depsgraph evaluation.
-This enables users to make Python nodes that prevent them from having remake things in geometry nodes while retaining the ease of use and accessiblity.
+The Python node allows users to process geometry attributes and primitives, but **not** fields, using Python from within the geometry node system.
+Because it is executed in the context of the active Blender program, importing the `bpy` module works, but is limited since the Python code is executed during the depsgraph evaluation.
+This enables users to make Python nodes that prevent them from having remake things in geometry nodes while retaining the ease of use.
 
 ![Node](python_node_example_images/Node.png)
 
@@ -41,6 +41,8 @@ Default string to use in the Python field one every node:
 ```
 import bpy; exec(bpy.data.texts[node["strings"][0].decode()].as_string()) if hasattr(bpy, "enable_py_node") else print("Safeguard: Set bpy.enable_py_node to True to enable Python node execution")
 ```
+
+After bpy.enable_py_node has been set to True the first String input is the name of the text block that will be executed.
 
 To enable execution I put the following string in a geometry node tool:
 ```
