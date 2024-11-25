@@ -8,8 +8,15 @@
 #define PY_SSIZE_T_CLEAN
 
 // Somebody will kill me for these include statements.. But it works!
-#include "python/311/include/Python.h"
-#include "python/311/include/frameobject.h"
+#ifdef _WIN32
+#    include "python/311/include/Python.h"
+#    include "python/311/include/frameobject.h"
+#endif
+#ifdef __APPLE__
+#    include "python/include/python3.11/Python.h"
+#    include "python/include/python3.11/frameobject.h"
+#endif
+
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include "python/numpy/core/include/numpy/arrayobject.h"
 
