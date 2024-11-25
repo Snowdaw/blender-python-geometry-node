@@ -13,12 +13,18 @@
 #    include "python/311/include/frameobject.h"
 #endif
 #ifdef __APPLE__
-#    include "python/include/python3.11/Python.h"
-#    include "python/include/python3.11/frameobject.h"
+#    include "../../lib/macos_arm64/python/include/python3.11/Python.h"
+#    include "../../lib/macos_arm64/python/include/python3.11/frameobject.h"
 #endif
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include "python/numpy/core/include/numpy/arrayobject.h"
+#ifdef _WIN32
+#    include "python/numpy/core/include/numpy/arrayobject.h"
+#endif
+#ifdef __APPLE__
+#    include "../../lib/macos_arm64/python/numpy/core/include/numpy/arrayobject.h"
+#endif
+
 
 #include "BLI_utildefines.h" /* for bool */
 

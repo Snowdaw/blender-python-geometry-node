@@ -84,20 +84,21 @@ For example do not use `exit()` or an infinite loop. As this locks up the Blende
 Basically the same things as coding addons apply, with some geometry node based spice.
 
 # Build notes
-This build has edited numpy includes. Copy the following folder:
+This build uses an edited numpy.
+
+First download the Blender libraries with `make update`.
+
+Then copy the following folder:
 ```
-lib/{your_platform}/python/311/lib/site-packages/numpy
+py-geonode-modified/numpy
 ```
 
 To the location with your platform. (Such as windows_x64)
 ```
 lib/{your_platform}/python/
 ```
-In the copied numpy comment out:
-```
-#include <Python.h>
-```
-in `core/include/numpy/ndarrayobject.h` and `core/include/numpy/npy_common.h`
+
+Now you can use `make` (or `make.bat` on Windows) to build Blender.
 
 ## Post build
 
